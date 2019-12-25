@@ -1,4 +1,6 @@
 use primes::is_prime;
+use std::sync::mpsc;
+use std::thread;
 
 fn is_harshad_prime(n: u32) -> bool {
     let sum_digits = sum_digits(n);
@@ -17,13 +19,50 @@ fn sum_digits(n: u32) -> u32 {
 }
 
 fn main() {
-    let mut count = 0;
-    for i in 1..98_765_433 {
-        if is_harshad_prime(i) {
-            count += 1;
+    let (tx, rx) = mpsc::channel();
+    let tx1 = mpsc::Sender::clone(&tx);
+    let tx2 = mpsc::Sender::clone(&tx);
+    let tx3 = mpsc::Sender::clone(&tx);
+    thread::spawn(move || {
+        let mut count = 0;
+        for i in 1..(98_765_433 / 4) {
+            if is_harshad_prime(i) {
+                count += 1;
+            }
         }
-    }
-    println!("{}", count);
+        tx.send(count).unwrap();
+    });
+    thread::spawn(move || {
+        let mut count = 0;
+        for i in (98_765_433 / 4)..(98_765_433 / 4 * 2) {
+            if is_harshad_prime(i) {
+                count += 1;
+            }
+        }
+        tx1.send(count).unwrap();
+    });
+    thread::spawn(move || {
+        let mut count = 0;
+        for i in (98_765_433 / 4 * 2)..(98_765_433 / 4 * 3) {
+            if is_harshad_prime(i) {
+                count += 1;
+            }
+        }
+        tx2.send(count).unwrap();
+    });
+    thread::spawn(move || {
+        let mut count = 0;
+        for i in (98_765_433 / 4 * 3)..(98_765_433) {
+            if is_harshad_prime(i) {
+                count += 1;
+            }
+        }
+        tx3.send(count).unwrap();
+    });
+    println!(
+        "{}",
+        rx.recv().unwrap() + rx.recv().unwrap() + rx.recv().unwrap() + rx.recv().unwrap()
+    );
 }
 
 #[cfg(test)]
